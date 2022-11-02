@@ -1,0 +1,43 @@
+﻿@page "/"
+@using DevExpressDataGridandForm.Data
+@inject WeatherForecastService ForecastService
+@inject NavigationManager UriHelper
+
+<div class="Row" style="text-align:center">
+    <h2> Dev Express Add edit button demo.</h2>
+</div>
+<div class="Row">
+    <h3> This is Dev Express data grid and button example</h3>
+    <h5>Add new record using 'New Record' button with new form opening.</h5>
+    <h5>Edit old record using 'Edit' button next to record inside the grid with edit form opening.</h5>
+</div>
+<div>
+    <DxButton Id="newButton" RenderStyle="ButtonRenderStyle.Success" Click="@(()=> { saveChanges(); })" Text="New Record"></DxButton>
+</div>
+<DxGrid Data="forecasts">
+    <Columns>
+        <DxGridCommandColumn>
+            <CellDisplayTemplate>
+                @{
+                    int keyField = ((WeatherForecast)context.DataItem).ID;
+                    <a style="text-decoration: none;" href="/SeparateEditForm/@keyField">Edit</a>
+                }
+            </CellDisplayTemplate>
+        </DxGridCommandColumn>
+        <DxGridDataColumn FieldName=@nameof(WeatherForecast.TemperatureC) Caption="Temp. (C)" />
+        <DxGridDataColumn FieldName=@nameof(WeatherForecast.Summary) Caption="Summary" />
+        <DxGridDataColumn FieldName=@nameof(WeatherForecast.Date) DisplayFormat="dd/MM/yyyy" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private List<WeatherForecast>? forecasts;
+    protected override async Task OnInitializedAsync() {
+        forecasts = await ForecastService.GetForecastAsync();
+    }
+     void saveChanges()
+    {
+       // await ForecastService.ChangeForecastAsync(copyForecast);
+        UriHelper.NavigateTo(@"\SeparateEditForm\0");
+    }
+}

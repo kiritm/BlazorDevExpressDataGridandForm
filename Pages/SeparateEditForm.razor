@@ -1,0 +1,100 @@
+﻿@page "/SeparateEditForm/{id}"
+@inject NavigationManager UriHelper
+@using DevExpressDataGridandForm.Data
+@inject WeatherForecastService ForecastService
+
+@if (copyForecast == null) {
+    <h1>Loading...</h1>
+}
+else {
+    <div style="text-align:center">
+        @Title    </div>
+   <DxFormLayout Data=@copyForecast ItemUpdating=@((pair) => OnItemUpdating(pair.Key, pair.Value))>
+        <DxFormLayoutItem Field=@nameof(WeatherForecast.TemperatureC) Caption="Temp. (C):" />
+        <DxFormLayoutItem Field=@nameof(WeatherForecast.Summary) Caption="Summary:">
+            <Template>
+                <DxComboBox Data=@summaries 
+                           Value="@(((string)((ValueEditContext)context).Value))" 
+                           ValueChanged="@((string value) => ((ValueEditContext)context).OnChanged(value))"></DxComboBox>
+            </Template>
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Field=@nameof(WeatherForecast.Date) Caption="Date:">
+            <Template>
+                <DxDateEdit Date=@(((DateTime)((ValueEditContext)context).Value))
+                            DateChanged=@((DateTime value) => ((ValueEditContext)context).OnChanged(value))></DxDateEdit>
+            </Template>
+        </DxFormLayoutItem>
+        <DxFormLayoutItem ColSpanMd="3" BeginRow="true">
+            <Template>
+                <DxButton Id="saveButton" RenderStyle="ButtonRenderStyle.Success" Click="@(()=> { saveChanges(); })" Text="Save"></DxButton>
+                <DxButton Id="cancelButton" RenderStyle="ButtonRenderStyle.Secondary" Click="@(()=> { cancelChanges(); })" Text="Cancel"></DxButton>
+            </Template>
+        </DxFormLayoutItem>
+    </DxFormLayout>
+}
+
+@code {
+    [Parameter]
+    public string? id { get; set; }
+    [Parameter]
+    public string? Title { get; set; }
+
+    WeatherForecast? forecast = null;
+    WeatherForecast? copyForecast = null;
+    string[]? summaries;
+    private List<WeatherForecast>? ForecastsL;
+    public readonly string[] Summaries = new[] {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    };
+    WeatherForecast? forecasts = null;
+    protected override async Task OnInitializedAsync()
+    {
+        forecast = await ForecastService.GetForecastByIdAsync(Convert.ToInt32(id));
+        if (forecast != null){
+            Title = "Edit old record " + forecast.ID.ToString();
+            copyForecast = new WeatherForecast()
+                {
+                    ID = forecast.ID,
+                    Date = forecast.Date,
+                    Summary = forecast.Summary,
+                    TemperatureC = forecast.TemperatureC
+                };
+        }else{
+            ForecastsL = await ForecastService.GetForecastAsync();
+            int i = ForecastsL.Count +1;
+            Title = "Add New record " + i.ToString();
+            var rnd = new Random();
+            copyForecast = new WeatherForecast()
+                {
+                    ID = i,
+                    Date = DateTime.Today.AddDays(i),
+                    TemperatureC = rnd.Next(-20, 55),
+                    Summary = Summaries[rnd.Next(Summaries.Length)]
+                };
+        }
+            
+            summaries = ForecastService.Summaries;
+        
+           
+       
+    }
+
+    void OnItemUpdating(string fieldName, object newValue) {
+        if (fieldName == nameof(WeatherForecast.Summary)) {
+            copyForecast.Summary = newValue.ToString();
+        }
+        else if (fieldName == nameof(WeatherForecast.TemperatureC)) {
+            copyForecast.TemperatureC = Convert.ToInt32(newValue);
+        }
+        else if (fieldName == nameof(WeatherForecast.Date)) {
+            copyForecast.Date = Convert.ToDateTime(newValue);
+        }
+    }
+    async void saveChanges() {
+        await ForecastService.ChangeForecastAsync(copyForecast);
+        UriHelper.NavigateTo(@"\");
+    }
+    void cancelChanges() {
+        UriHelper.NavigateTo(@"\");
+    }
+}
